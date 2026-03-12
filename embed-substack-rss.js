@@ -130,7 +130,6 @@ function embedSubstackRSS () {
 
     try {
       const res = await fetchWithTimeout(rssUrl, 12000);
-      console.log(`Here ya go: ${res}`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       console.debug('Substack rss2json response:', data);

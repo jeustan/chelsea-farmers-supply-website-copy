@@ -129,7 +129,7 @@ function embedSubstackRSS () {
     console.info('Substack widget fetching RSS via:', rssUrl);
 
     try {
-      const res = await fetchWithTimeout(rssUrl, 12000).then(r => r.text());
+      const res = fetch(rssUrl).then(r => r.text());
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
       console.log(`HERE IS THE RESPONSE: ${res}`);

@@ -49,6 +49,29 @@ function embedSubstackRSS () {
     // return Array.from(elements).slice(0, 3).map(el => el.outerHTML).join('');
   };
 
+  const parseRssXmlItems = (xml) => {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(xml, 'text/xml');
+    const parseErr = doc.querySelector('parsererror');
+    if (parseErr) {
+      throw new Error('Invalid RSS XML response');
+    }
+
+    return Array.from(doc.querySelectorAll('item')).map((item) => {
+      const getText = (selector) => {
+        const el = item.querySelector(selector);
+        return el ? el.textContent : '';
+      };
+
+      return {
+        title: getText('title'),
+        link: getText('link'),
+        pubDate: getText('pubDate'),
+        content: getText('content\\:encoded') || getText('description')
+      };
+    });
+  };
+
   const buildCard = (post, opts) => {
     const a = document.createElement('a');
     a.className = 'substack-card';
@@ -131,15 +154,27 @@ function embedSubstackRSS () {
     try {
       const res = await fetchWithTimeout(rssUrl, 12000);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      
-      const data = await res.json();
-      console.debug('Substack rss2json response:', data);
 
-      if (data.status !== 'ok' || !Array.isArray(data.items)) {
-        throw new Error(data.message || 'Failed to parse feed');
+      // Some environments return RSS XML directly, others return JSON.
+      const raw = await res.text();
+      const contentType = (res.headers.get('content-type') || '').toLowerCase();
+      let items = [];
+
+      const looksLikeJson = /^[\s\n\r]*[\[{]/.test(raw);
+
+      if (contentType.includes('application/json') || looksLikeJson) {
+        const data = JSON.parse(raw);
+        console.debug('Substack JSON response:', data);
+        if (!Array.isArray(data.items)) {
+          throw new Error(data.message || 'Failed to parse JSON feed');
+        }
+        items = data.items;
+      } else {
+        items = parseRssXmlItems(raw);
+        console.debug('Substack XML response parsed items:', items.length);
       }
 
-      const posts = data.items.slice(0, Math.max(1, cfg.posts));
+      const posts = items.slice(0, Math.max(1, cfg.posts));
       if (!posts.length) {
         container.innerHTML = '<p class="substack-empty">No posts available. Ensure your Substack has published posts and they are set to "everyone" audience. Feed caches can take a few minutes to update.</p>';
         return;

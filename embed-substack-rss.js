@@ -40,13 +40,17 @@ function embedSubstackRSS () {
     return m ? m[1] : null;
   };
 
-  const truncate = (str, max = 2500) => (str && str.length > max ? `${str.slice(0, max)}…` : (str || ''));
-  const truncateContent = (html) => {
+  const sanitizeContent = (html) => {
+    if (!html) return '';
     const parser = new DOMParser();
     const doc = parser.parseFromString(html, 'text/html');
-    const elements = doc.querySelectorAll('p, img');
-    return Array.from(elements).map(el => el.outerHTML).join('');
-    // return Array.from(elements).slice(0, 3).map(el => el.outerHTML).join('');
+
+    // Remove embedded subscribe forms and interactive UI that should not render inside cards.
+    doc.querySelectorAll(
+      '.subscription-widget-wrap-editor, .subscription-widget, form, input, button, script, style'
+    ).forEach((el) => el.remove());
+
+    return doc.body ? doc.body.innerHTML : html;
   };
 
   const parseRssXmlItems = (xml) => {
@@ -60,14 +64,20 @@ function embedSubstackRSS () {
     return Array.from(doc.querySelectorAll('item')).map((item) => {
       const getText = (selector) => {
         const el = item.querySelector(selector);
-        return el ? el.textContent : '';
+        return el ? (el.textContent || '').trim() : '';
       };
+
+      const encodedNode =
+        item.getElementsByTagName('content:encoded')[0] ||
+        item.getElementsByTagNameNS('*', 'encoded')[0] ||
+        null;
+      const encodedContent = encodedNode ? (encodedNode.textContent || '').trim() : '';
 
       return {
         title: getText('title'),
         link: getText('link'),
         pubDate: getText('pubDate'),
-        content: getText('content\\:encoded') || getText('description')
+        content: encodedContent || getText('description')
       };
     });
   };
@@ -111,7 +121,7 @@ function embedSubstackRSS () {
 
     const pContent = document.createElement('div');
     pContent.className = 'substack-content';
-    pContent.innerHTML = truncateContent(post.content);
+    pContent.innerHTML = sanitizeContent(post.content);
     body.appendChild(pContent);
    
     wrap.appendChild(body);

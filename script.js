@@ -675,39 +675,39 @@ async function loadDeferredIframe() {
     tryRSS();
 }
 
-const loadSubstackRSS = async () => {
-    fetch('/.netlify/functions/substack-feed')
-    .then(r => r.text())
-    .then(xml => {
-        console.log('Fetched RSS feed:', xml);
-        const parser = new DOMParser();
-        const feed = parser.parseFromString(xml, "application/xml");
-        const items = feed.querySelectorAll("item");
-        const rssContainer = document.getElementById("rss-feed");
+// const loadSubstackRSS = async () => {
+//     fetch('/.netlify/functions/substack-feed')
+//     .then(r => r.text())
+//     .then(xml => {
+//         console.log('Fetched RSS feed:', xml);
+
+//         const parser = new DOMParser();
+//         const feed = parser.parseFromString(xml, "text/xml");
+//         const items = feed.querySelectorAll("item");
+//         const rssContainer = document.getElementById("rss-feed");
         
-        if (rssContainer) {
-            items.forEach(item => {
-                const title = item.querySelector("title") ? item.querySelector("title").textContent : "No title";
-                const link = item.querySelector("link") ? item.querySelector("link").textContent : "#";
-                const pubDate = item.querySelector("pubDate") ? new Date(item.querySelector("pubDate").textContent).toLocaleDateString() : "No date";
+//         if (rssContainer) {
+//             items.forEach(item => {
+//                 const title = item.querySelector("title") ? item.querySelector("title").textContent : "No title";
+//                 const link = item.querySelector("link") ? item.querySelector("link").textContent : "#";
+//                 const pubDate = item.querySelector("pubDate") ? new Date(item.querySelector("pubDate").textContent).toLocaleDateString() : "No date";
                 
-                const article = document.createElement("article");
-                article.className = "rss-item";
-                article.innerHTML = `
-                    <h3><a href="${link}" target="_blank" rel="noopener">${title}</a></h3>
-                    <p class="pub-date">${pubDate}</p>
-                `;
-                rssContainer.appendChild(article);
-            });
-        } else {
-            console.warn('RSS container not found');
-        }       
-    });
-}
+//                 const article = document.createElement("article");
+//                 article.className = "rss-item";
+//                 article.innerHTML = `
+//                     <h3><a href="${link}" target="_blank" rel="noopener">${title}</a></h3>
+//                     <p class="pub-date">${pubDate}</p>
+//                 `;
+//                 rssContainer.appendChild(article);
+//             });
+//         } else {
+//             console.warn('RSS container not found');
+//         }       
+//     });
+// }
 
 document.addEventListener("DOMContentLoaded", () => {
     setTimeout(() => {
-        loadSubstackRSS();
         loadDeferredIframe(); 
     }, 50);
 });

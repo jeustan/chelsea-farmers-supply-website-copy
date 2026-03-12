@@ -3,7 +3,7 @@ const FEED_URL = "https://chelseafarmerssupply.substack.com/feed";
 
 exports.handler = async () => {
   const res = await fetch(FEED_URL);
-  const xml = await res.text();
+  const xml = await res;
 
   return {
     statusCode: res.status,
